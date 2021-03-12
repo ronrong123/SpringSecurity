@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<context:component-scan base-package="com.company" >
+		<context:include-filter type="annotation" expression="repository"/>
+		<context:include-filter type="annotation" expression="service"/>
+		<!-- context:include-filter : 포함시키는것 -->
+		<context:exclude-filter type="annotation" expression="controller"/>
+		<!-- context:exclude-filter : 제외시키는것 -->
+	</context:component-scan>
+	<!-- security -->
+	<security:http pattern="/resources/**" security="none" />
+	<!-- 정적콘텐츠는 security가 필요없으니(css,image) 처리하지않겠다는 뜻 -->
+	<security:http>
+		<security:intercept-url pattern="/top" access="permitAll()" />
+		<security:intercept-url pattern="/loginForm" access="permitAll()" />
+		<!-- 모든 사용자가 top페이지를 갈수있음 -->
+		<security:intercept-url pattern="/admin/**" access="hasAuthority('ROLE_ADMIN')" />
+		<!--  ROLE_ADMIN만 접근가능  -->
+		<security:intercept-url pattern="/**" access="isAuthenticated()" />
+		<!-- 나머지 모든파일은 로그인해야 접근가능 -->
+		<security:form-login default-target-url="/top" 
+							login-page="/loginForm"
+							login-processing-url="/login"
+							username-parameter="id"
+							password-parameter="password"
+		/>
+		<!-- login-processing-url="": form에 들어있는 action값 -->
+		<!-- 정상적으로 로그인되면 top으로 감 -->
+		<security:logout logout-url="/logout" logout-success-url="/top" />
+		<!-- 정상적으로 로그아웃되면 top으로 감 -->
+		<security:csrf disabled="true" />
+	</security:http>
+	<!-- permitAll() : 누구나 가능 hasAuthority('ROLE_ADMIN')" : ROLE_ADMIN만 접근가능 
+		isAuthenticated() :나머지 모든건 로그인해야 접근가능 -->
+	<!-- 다하면 web.xml에 가서 filter을 걸어줘야함 -->
+	<security:authentication-manager>
+		<security:authentication-provider user-service-ref="userService">
+			<!-- <security:jdbc-user-service data-source-ref="dataSource"
+			  users-by-username-query
+			  ="SELECT ID, PASSWORD, 1
+				FROM USERS
+				WHERE ID=?"			  
+			   authorities-by-username-query
+			  ="select id, 'ROLE_' || upper(role)
+				from users
+				where id=?"
+			/>	 -->
+			  <!-- users-by-username-query :id,password 가져옴 -->	
+			  <!-- authorities-by-username-query:role을 가져옴 -->		
+			  <!-- {noop} : 암호화안됨 -->
+			  <security:password-encoder hash="bcrypt"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+</beans>
